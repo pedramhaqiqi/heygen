@@ -4,12 +4,13 @@ const BASE_URL: string = "http://localhost:8000";
 
 async function runTest() {
   const client = new StatusClient(BASE_URL);
+
   try {
-    console.log("Fetching job status...");
-    const status = await client.getStatus();
-    console.log("Job status:", status);
-  } catch (err: unknown) {
-    console.error("Error fetching job status:", err);
+    console.log("Waiting for job completion...");
+    const finalStatus = await client.awaitCompletion();
+    console.log(`Final job status: ${finalStatus}`);
+  } catch (error) {
+    console.error("Error while waiting for job completion:", error);
   }
 }
 
