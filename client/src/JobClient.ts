@@ -1,5 +1,5 @@
-import { STATUS } from "./constants";
 import axios, { AxiosInstance } from "axios";
+import { STATUS } from "./constants";
 class JobClient {
   private api: AxiosInstance;
 
@@ -61,27 +61,21 @@ class JobClient {
    * @throws {Error} If the job ends in an error state or the timeout is reached.
    */
   public async awaitCompletion(
-    jobId: string, 
+    jobId: string,
     timeoutMs: number = 30000,
-    pollIntervalMs: number = 1000,
+    pollIntervalMs: number = 1000
   ): Promise<string> {
     const start = Date.now();
 
-    while (true) {
-      const elapsed = Date.now() - start;
-      if (elapsed > timeoutMs) {
-        throw new Error(
-          `Timeout reached after ${timeoutMs}ms waiting for completion.`
-        );
-      }
-
+    while (Date.now() - start <= timeoutMs) {
       let status: string;
       try {
         console.log("Fetching status...");
         status = await this.getStatus(jobId);
       } catch (err: unknown) {
-        // For now, decide to fail immediately TODO: Add retry logic/handle errors
-        throw new Error(`Failed to fetch status: ${err}`);
+        throw new Error(
+          `Failed to fetch status for job ${jobId}: ${String(err)}`
+        );
       }
 
       switch (status) {
@@ -90,11 +84,15 @@ class JobClient {
         case STATUS.ERROR:
           throw new Error("The job ended in an error state.");
         case STATUS.PENDING:
-          console.log(`Job still pending...Waiting ${pollIntervalMs}ms`);
+          console.log(`Job still pending... Waiting ${pollIntervalMs}ms`);
           await this.delay(pollIntervalMs);
           break;
       }
     }
+
+    throw new Error(
+      `Timeout reached after ${timeoutMs}ms waiting for completion.`
+    );
   }
 
   /**
