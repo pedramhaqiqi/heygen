@@ -6,6 +6,12 @@ import {
   DEFAULT_TIMEOUT_MS,
 } from "./constants";
 import axiosRetry from "axios-retry";
+import {
+  pollMode,
+  AwaitCompletionOptions,
+  CreateJobResponse,
+  StatusResponse,
+} from "./types";
 class JobClient {
   private api: AxiosInstance;
 
