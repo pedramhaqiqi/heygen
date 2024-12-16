@@ -1,14 +1,42 @@
-import fetch from "node-fetch";
-import { STATUS } from "./constants";
+import axios, { AxiosInstance } from "axios";
+import {
+  STATUS,
+  DEFAULT_MAX_RETRIES,
+  DEFAULT_POLL_INTERVAL_MS,
+  DEFAULT_TIMEOUT_MS,
+} from "./constants";
+import axiosRetry from "axios-retry";
+import {
+  pollMode,
+  AwaitCompletionOptions,
+  CreateJobResponse,
+  StatusResponse,
+} from "./types";
 class JobClient {
-  private baseUrl: string;
+  private api: AxiosInstance;
 
-  constructor(baseUrl: string) {
-    this.baseUrl = baseUrl.replace(/\/+$/, "");
+  constructor(baseUrl: string, maxRetries: number = DEFAULT_MAX_RETRIES) {
+    const url = new URL(baseUrl);
+    this.api = axios.create({
+      baseURL: url.toString(),
+    });
+
+    axiosRetry(this.api, {
+      retries: maxRetries,
+      retryDelay: axiosRetry.exponentialDelay,
+      retryCondition: (error) => {
+        console.log(
+          `Retry attempt due to error: ${error.message} with code ${error.code}`
+        );
+        return (
+          axiosRetry.isNetworkError(error) || axiosRetry.isRetryableError(error)
+        );
+      },
+    });
   }
 
   /**
-   * Creates a new job on the server with the specified parameters.
+   * Creates a new job on the server with the specified parameters, main use is for testing.
    * @param {number} processingDuration - The time in seconds the job should take before completing or erroring.
    * @param {boolean} shouldError - Whether the job should end in an error state (true) or complete successfully (false).
    * @returns {Promise<{ job_id: string; status: string }>} An object containing the newly created job_id and its initial status.
@@ -18,23 +46,17 @@ class JobClient {
     processingDuration: number,
     shouldError: boolean
   ): Promise<CreateJobResponse> {
-    const response = await fetch(`${this.baseUrl}/jobs`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    try {
+      const response = await this.api.post<CreateJobResponse>("/jobs", {
         processing_duration: processingDuration,
         should_error: shouldError,
-      }),
-    });
+      });
 
-    if (!response.ok) {
-      throw new Error(
-        `Failed to create job: ${response.status} ${response.statusText}`
-      );
+      const data = response.data;
+      return { job_id: data.job_id, status: data.status };
+    } catch (error) {
+      throw new Error(`Failed to create job: ${error}`);
     }
-
-    const data = (await response.json()) as CreateJobResponse;
-    return { job_id: data.job_id, status: data.status };
   }
 
   /**
@@ -43,18 +65,17 @@ class JobClient {
    * @returns {Promise<string>} The current status of the job as a string.
    * @throws {Error} If the HTTP request fails or the server responds with an error status.
    */
-  public async getStatus(jobId: string): Promise<string> {
-    const response = await fetch(
-      `${this.baseUrl}/status?job_id=${encodeURIComponent(jobId)}`
-    );
-    if (!response.ok) {
-      throw new Error(
-        `Failed to fetch status for job ${jobId}: ${response.status} ${response.statusText}`
-      );
-    }
+  public async getStatus(jobId: string, mode: pollMode): Promise<string> {
+    try {
+      const response = await this.api.get<StatusResponse>(`/status`, {
+        params: { job_id: jobId, mode },
+      });
 
-    const data: StatusResponse = (await response.json()) as StatusResponse;
-    return data.result;
+      const data = response.data;
+      return data.result;
+    } catch (error) {
+      throw new Error(`Failed to fetch status for job ${jobId}: ${error}`);
+    }
   }
 
   /**
@@ -65,40 +86,40 @@ class JobClient {
    * @throws {Error} If the job ends in an error state or the timeout is reached.
    */
   public async awaitCompletion(
-    timeoutMs: number = 30000,
-    pollIntervalMs: number = 1000,
-    jobId: string
+    jobId: string,
+    {
+      mode = "long",
+      timeoutMs = DEFAULT_TIMEOUT_MS,
+      pollIntervalMs = DEFAULT_POLL_INTERVAL_MS,
+    }: AwaitCompletionOptions
   ): Promise<string> {
     const start = Date.now();
 
-    while (true) {
-      const elapsed = Date.now() - start;
-      if (elapsed > timeoutMs) {
-        throw new Error(
-          `Timeout reached after ${timeoutMs}ms waiting for completion.`
-        );
-      }
-
+    while (Date.now() - start <= timeoutMs) {
       let status: string;
       try {
         console.log("Fetching status...");
-        status = await this.getStatus(jobId);
+        status = await this.getStatus(jobId, mode);
       } catch (err: unknown) {
-        // For now, decide to fail immediately TODO: Add retry logic/handle errors
-        throw new Error(`Failed to fetch status: ${err}`);
+        throw new Error(
+          `Failed to fetch status for job ${jobId}: ${String(err)}`
+        );
       }
 
       switch (status) {
         case STATUS.COMPLETED:
-          return STATUS.COMPLETED;
         case STATUS.ERROR:
-          throw new Error("The job ended in an error state.");
+          return status;
         case STATUS.PENDING:
-          console.log(`Job still pending...Waiting ${pollIntervalMs}ms`);
+          console.log(`Job still pending... Waiting ${pollIntervalMs}ms`);
           await this.delay(pollIntervalMs);
           break;
       }
     }
+
+    throw new Error(
+      `Timeout reached after ${timeoutMs}ms waiting for completion.`
+    );
   }
 
   /**
