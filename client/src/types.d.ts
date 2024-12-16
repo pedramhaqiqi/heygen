@@ -1,5 +1,10 @@
-type resultType = 'pending' | 'completed' | 'error';
+type resultType = "pending" | "completed" | "error";
 
 interface StatusResponse {
-    result: resultType;
-  }
+  result: resultType;
+}
+
+interface CreateJobResponse {
+  job_id: string;
+  status: resultType;
+}
