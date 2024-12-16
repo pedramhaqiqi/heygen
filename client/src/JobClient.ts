@@ -7,6 +7,13 @@ class JobClient {
     this.baseUrl = baseUrl.replace(/\/+$/, "");
   }
 
+  /**
+   * Creates a new job on the server with the specified parameters.
+   * @param {number} processingDuration - The time in seconds the job should take before completing or erroring.
+   * @param {boolean} shouldError - Whether the job should end in an error state (true) or complete successfully (false).
+   * @returns {Promise<{ job_id: string; status: string }>} An object containing the newly created job_id and its initial status.
+   * @throws {Error} If the HTTP request fails or the server returns an error response.
+   */
   public async createJob(
     processingDuration: number,
     shouldError: boolean
