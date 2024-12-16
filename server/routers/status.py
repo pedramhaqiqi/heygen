@@ -6,21 +6,34 @@ from server.core.task import TaskStatus
 
 router = APIRouter()
 
+
 @router.get("/status")
-async def get_status(request: Request, job_id: str = Query(...)):
+async def get_status(
+    request: Request,
+    job_id: str = Query(...),
+    mode: str = Query("short", regex="^(short|long)$"),
+):
     registry: TaskRegistry = request.app.state.task_registry
     task = registry.get_task(job_id)
     if not task:
-        raise HTTPException(status_code=404, detail=f"Task with job_id {job_id} not found")
+        raise HTTPException(
+            status_code=404, detail=f"Task with job_id {job_id} not found"
+        )
 
-    long_poll_timeout = 5.0
-    poll_interval = 0.5
-    start_wait = time.time()
-
-    while time.time() - start_wait < long_poll_timeout:
-        status = task.get_status()
-        if status in [TaskStatus.COMPLETED, TaskStatus.ERROR]:
+    match mode:
+        case "short":
+            status = task.get_status()
             return {"result": status}
-        await asyncio.sleep(poll_interval)
 
-    return {"result": TaskStatus.PENDING}
+        case "long":
+            long_poll_timeout = 5.0
+            poll_interval = 0.5
+            start_wait = time.time()
+
+            while time.time() - start_wait < long_poll_timeout:
+                status = task.get_status()
+                if status in [TaskStatus.COMPLETED, TaskStatus.ERROR]:
+                    return {"result": status}
+                await asyncio.sleep(poll_interval)
+
+            return {"result": TaskStatus.PENDING}
