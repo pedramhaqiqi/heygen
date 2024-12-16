@@ -1,4 +1,3 @@
-# server/routers/jobs.py
 from fastapi import APIRouter, Request
 from pydantic import BaseModel
 from server.core.task import Task
