@@ -66,7 +66,8 @@ class JobClient {
    */
   public async awaitCompletion(
     timeoutMs: number = 30000,
-    pollIntervalMs: number = 1000
+    pollIntervalMs: number = 1000,
+    jobId: string
   ): Promise<string> {
     const start = Date.now();
 
@@ -81,7 +82,7 @@ class JobClient {
       let status: string;
       try {
         console.log("Fetching status...");
-        status = await this.getStatus();
+        status = await this.getStatus(jobId);
       } catch (err: unknown) {
         // For now, decide to fail immediately TODO: Add retry logic/handle errors
         throw new Error(`Failed to fetch status: ${err}`);
