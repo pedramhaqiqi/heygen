@@ -7,6 +7,29 @@ class JobClient {
     this.baseUrl = baseUrl.replace(/\/+$/, "");
   }
 
+  public async createJob(
+    processingDuration: number,
+    shouldError: boolean
+  ): Promise<CreateJobResponse> {
+    const response = await fetch(`${this.baseUrl}/jobs`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        processing_duration: processingDuration,
+        should_error: shouldError,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to create job: ${response.status} ${response.statusText}`
+      );
+    }
+
+    const data = await response.json() as CreateJobResponse;
+    return { job_id: data.job_id, status: data.status };
+  }
+
   /**
    * Fetches the current status of the job from the server.
    * @returns {Promise<string>} The current status of the job as a string.
