@@ -26,20 +26,23 @@ class JobClient {
       );
     }
 
-    const data = await response.json() as CreateJobResponse;
+    const data = (await response.json()) as CreateJobResponse;
     return { job_id: data.job_id, status: data.status };
   }
 
   /**
    * Fetches the current status of the job from the server.
+   * @param {string} jobId - The unique identifier of the job to check.
    * @returns {Promise<string>} The current status of the job as a string.
    * @throws {Error} If the HTTP request fails or the server responds with an error status.
    */
-  public async getStatus(): Promise<string> {
-    const response = await fetch(`${this.baseUrl}/status`);
+  public async getStatus(jobId: string): Promise<string> {
+    const response = await fetch(
+      `${this.baseUrl}/status?job_id=${encodeURIComponent(jobId)}`
+    );
     if (!response.ok) {
       throw new Error(
-        `Failed to fetch status: ${response.status} ${response.statusText}`
+        `Failed to fetch status for job ${jobId}: ${response.status} ${response.statusText}`
       );
     }
 
