@@ -1,1 +1,1 @@
-export { StatusClient } from './StatusClient';  
+export { JobClient } from './JobClient';  

@@ -1,9 +1,9 @@
-import { StatusClient } from "../src";
+import { JobClient } from "../src";
 
 const BASE_URL: string = "http://localhost:8000";
 
 async function runTest() {
-  const client = new StatusClient(BASE_URL);
+  const client = new JobClient(BASE_URL);
 
   try {
     console.log("Waiting for job completion...");

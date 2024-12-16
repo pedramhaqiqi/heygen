@@ -1,6 +1,6 @@
 import fetch from "node-fetch";
 import { STATUS } from "./constants";
-class StatusClient {
+class JobClient {
   private baseUrl: string;
 
   constructor(baseUrl: string) {
@@ -77,4 +77,4 @@ class StatusClient {
   }
 }
 
-export { StatusClient };
+export { JobClient };
