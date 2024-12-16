@@ -1,14 +1,17 @@
-import fetch from "node-fetch";
 import { STATUS } from "./constants";
+import axios, { AxiosInstance } from "axios";
 class JobClient {
-  private baseUrl: string;
+  private api: AxiosInstance;
 
   constructor(baseUrl: string) {
-    this.baseUrl = baseUrl.replace(/\/+$/, "");
+    const url = new URL(baseUrl);
+    this.api = axios.create({
+      baseURL: url.toString(),
+    });
   }
 
   /**
-   * Creates a new job on the server with the specified parameters.
+   * Creates a new job on the server with the specified parameters, main use is for testing.
    * @param {number} processingDuration - The time in seconds the job should take before completing or erroring.
    * @param {boolean} shouldError - Whether the job should end in an error state (true) or complete successfully (false).
    * @returns {Promise<{ job_id: string; status: string }>} An object containing the newly created job_id and its initial status.
@@ -18,23 +21,17 @@ class JobClient {
     processingDuration: number,
     shouldError: boolean
   ): Promise<CreateJobResponse> {
-    const response = await fetch(`${this.baseUrl}/jobs`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    try {
+      const response = await this.api.post<CreateJobResponse>("/jobs", {
         processing_duration: processingDuration,
         should_error: shouldError,
-      }),
-    });
+      });
 
-    if (!response.ok) {
-      throw new Error(
-        `Failed to create job: ${response.status} ${response.statusText}`
-      );
+      const data = response.data;
+      return { job_id: data.job_id, status: data.status };
+    } catch (error) {
+      throw new Error(`Failed to create job: ${error}`);
     }
-
-    const data = (await response.json()) as CreateJobResponse;
-    return { job_id: data.job_id, status: data.status };
   }
 
   /**
@@ -44,17 +41,16 @@ class JobClient {
    * @throws {Error} If the HTTP request fails or the server responds with an error status.
    */
   public async getStatus(jobId: string): Promise<string> {
-    const response = await fetch(
-      `${this.baseUrl}/status?job_id=${encodeURIComponent(jobId)}`
-    );
-    if (!response.ok) {
-      throw new Error(
-        `Failed to fetch status for job ${jobId}: ${response.status} ${response.statusText}`
-      );
-    }
+    try {
+      const response = await this.api.get<StatusResponse>(`/status`, {
+        params: { job_id: jobId },
+      });
 
-    const data: StatusResponse = (await response.json()) as StatusResponse;
-    return data.result;
+      const data = response.data;
+      return data.result;
+    } catch (error) {
+      throw new Error(`Failed to fetch status for job ${jobId}: ${error}`);
+    }
   }
 
   /**
@@ -65,9 +61,9 @@ class JobClient {
    * @throws {Error} If the job ends in an error state or the timeout is reached.
    */
   public async awaitCompletion(
+    jobId: string, 
     timeoutMs: number = 30000,
     pollIntervalMs: number = 1000,
-    jobId: string
   ): Promise<string> {
     const start = Date.now();
 
