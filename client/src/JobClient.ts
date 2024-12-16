@@ -25,12 +25,12 @@ class JobClient {
       retries: maxRetries,
       retryDelay: axiosRetry.exponentialDelay,
       retryCondition: (error) => {
-        console.log(
-          `Retry attempt due to error: ${error.message} with code ${error.code}`
-        );
         return (
           axiosRetry.isNetworkError(error) || axiosRetry.isRetryableError(error)
         );
+      },
+      onRetry: (retryCount, err) => {
+        console.log(`Retry attempt #${retryCount} due to error: ${err.message}`);
       },
     });
   }

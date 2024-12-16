@@ -1,9 +1,12 @@
 import asyncio
 import time
-from fastapi import APIRouter, Request, HTTPException, Query
+
+from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi.responses import JSONResponse
+
+from server.core.rate_limit import limiter
 from server.core.state import TaskRegistry
 from server.core.task import TaskStatus
-from server.core.rate_limit import limiter
 
 router = APIRouter()
 
@@ -25,7 +28,7 @@ async def get_status(
     match mode:
         case "short":
             status = task.get_status()
-            return {"result": status}
+            return JSONResponse(content={"result": status})
 
         case "long":
             long_poll_timeout = 5.0
@@ -35,7 +38,7 @@ async def get_status(
             while time.time() - start_wait < long_poll_timeout:
                 status = task.get_status()
                 if status in [TaskStatus.COMPLETED, TaskStatus.ERROR]:
-                    return {"result": status}
+                    return JSONResponse(content={"result": status})
                 await asyncio.sleep(poll_interval)
 
-            return {"result": TaskStatus.PENDING}
+            return JSONResponse(content={"result": TaskStatus.PENDING})
