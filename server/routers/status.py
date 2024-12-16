@@ -3,11 +3,13 @@ import time
 from fastapi import APIRouter, Request, HTTPException, Query
 from server.core.state import TaskRegistry
 from server.core.task import TaskStatus
+from server.core.rate_limit import limiter
 
 router = APIRouter()
 
 
 @router.get("/status")
+@limiter.limit(limit_value="10/minute")
 async def get_status(
     request: Request,
     job_id: str = Query(...),
