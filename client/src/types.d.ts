@@ -8,3 +8,8 @@ interface CreateJobResponse {
   job_id: string;
   status: resultType;
 }
+interface AwaitCompletionOptions {
+    mode?: "short" | "long";
+    timeoutMs?: number;
+    pollIntervalMs?: number;
+}

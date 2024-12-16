@@ -1,12 +1,29 @@
 import axios, { AxiosInstance } from "axios";
-import { STATUS } from "./constants";
+import {
+  STATUS,
+  DEFAULT_MAX_RETRIES,
+  DEFAULT_POLL_INTERVAL_MS,
+  DEFAULT_TIMEOUT_MS,
+} from "./constants";
+import axiosRetry from "axios-retry";
 class JobClient {
   private api: AxiosInstance;
 
-  constructor(baseUrl: string) {
+  constructor(baseUrl: string, maxRetries: number = DEFAULT_MAX_RETRIES) {
     const url = new URL(baseUrl);
     this.api = axios.create({
       baseURL: url.toString(),
+    });
+
+    axiosRetry(this.api, {
+      retries: maxRetries,
+      retryDelay: axiosRetry.exponentialDelay,
+      retryCondition: (error) => {
+        // Retry on network errors or 5xx responses
+        return (
+          axiosRetry.isNetworkError(error) || axiosRetry.isRetryableError(error)
+        );
+      },
     });
   }
 
@@ -40,10 +57,10 @@ class JobClient {
    * @returns {Promise<string>} The current status of the job as a string.
    * @throws {Error} If the HTTP request fails or the server responds with an error status.
    */
-  public async getStatus(jobId: string): Promise<string> {
+  public async getStatus(jobId: string, mode): Promise<string> {
     try {
       const response = await this.api.get<StatusResponse>(`/status`, {
-        params: { job_id: jobId },
+        params: { job_id: jobId, mode },
       });
 
       const data = response.data;
@@ -62,8 +79,11 @@ class JobClient {
    */
   public async awaitCompletion(
     jobId: string,
-    timeoutMs: number = 30000,
-    pollIntervalMs: number = 1000
+    {
+      mode = "long",
+      timeoutMs = DEFAULT_TIMEOUT_MS,
+      pollIntervalMs = DEFAULT_POLL_INTERVAL_MS,
+    }: AwaitCompletionOptions
   ): Promise<string> {
     const start = Date.now();
 
@@ -71,7 +91,7 @@ class JobClient {
       let status: string;
       try {
         console.log("Fetching status...");
-        status = await this.getStatus(jobId);
+        status = await this.getStatus(jobId, mode);
       } catch (err: unknown) {
         throw new Error(
           `Failed to fetch status for job ${jobId}: ${String(err)}`
