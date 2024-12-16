@@ -6,9 +6,14 @@ async function runTest() {
   const client = new JobClient(BASE_URL);
 
   try {
+    console.log("Creating a new job...");
+    // Create a job that takes 10 seconds and does not error
+    const { job_id, status } = await client.createJob(10, false);
+    console.log(`Job created with ID: ${job_id}, initial status: ${status}`);
+
     console.log("Waiting for job completion...");
-    const finalStatus = await client.awaitCompletion();
-    console.log(`Final job status: ${finalStatus}`);
+    const finalStatus = await client.awaitCompletion(30000, 1000, job_id);
+    console.log(`Final job status for job ${job_id}: ${finalStatus}`);
   } catch (error) {
     console.error("Error while waiting for job completion:", error);
   }
