@@ -1,4 +1,5 @@
 type resultType = "pending" | "completed" | "error";
+type pollMode = "short" | "long";
 
 interface StatusResponse {
   result: resultType;
@@ -9,7 +10,7 @@ interface CreateJobResponse {
   status: resultType;
 }
 interface AwaitCompletionOptions {
-    mode?: "short" | "long";
+    mode?: pollMode;
     timeoutMs?: number;
     pollIntervalMs?: number;
 }

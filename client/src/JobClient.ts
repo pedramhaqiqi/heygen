@@ -19,7 +19,9 @@ class JobClient {
       retries: maxRetries,
       retryDelay: axiosRetry.exponentialDelay,
       retryCondition: (error) => {
-        // Retry on network errors or 5xx responses
+        console.log(
+          `Retry attempt due to error: ${error.message} with code ${error.code}`
+        );
         return (
           axiosRetry.isNetworkError(error) || axiosRetry.isRetryableError(error)
         );
@@ -57,7 +59,7 @@ class JobClient {
    * @returns {Promise<string>} The current status of the job as a string.
    * @throws {Error} If the HTTP request fails or the server responds with an error status.
    */
-  public async getStatus(jobId: string, mode): Promise<string> {
+  public async getStatus(jobId: string, mode: pollMode): Promise<string> {
     try {
       const response = await this.api.get<StatusResponse>(`/status`, {
         params: { job_id: jobId, mode },
@@ -100,9 +102,8 @@ class JobClient {
 
       switch (status) {
         case STATUS.COMPLETED:
-          return STATUS.COMPLETED;
         case STATUS.ERROR:
-          throw new Error("The job ended in an error state.");
+          return status;
         case STATUS.PENDING:
           console.log(`Job still pending... Waiting ${pollIntervalMs}ms`);
           await this.delay(pollIntervalMs);
