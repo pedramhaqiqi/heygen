@@ -1,7 +1,7 @@
 import { afterEach, beforeAll, describe, expect, it } from "@jest/globals";
 import nock from "nock";
 import { JobClient } from "../../src";
-import { JobClientError } from "../../src/errors";
+import { ServerError } from "../../src/errors";
 import { CreateJobResponse } from "../../src/types";
 
 const BASE_URL = "http://localhost:8000";
@@ -22,7 +22,7 @@ describe("JobClient - Server Error Handling", () => {
     nock(BASE_URL)
       .get("/status")
       .query({ job_id: "1", mode: "long" })
-      .times(NUM_RETRIES)
+      .times(NUM_RETRIES + 1) // To make sure we retry the request 3 times (nock behavior)
       .reply(500, "Internal Server Error");
     nock(BASE_URL).post("/jobs").reply(200, { job_id: "1", status: "PENDING" });
 
@@ -43,7 +43,8 @@ describe("JobClient - Server Error Handling", () => {
         pollIntervalMs: 1000,
       });
     } catch (error) {
-        expect(error).toBeInstanceOf(JobClientError);
+        console.log(`Caught error: ${error}`);
+        expect(error).toBeInstanceOf(ServerError);
     }
   });
 });

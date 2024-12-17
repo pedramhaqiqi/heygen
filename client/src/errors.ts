@@ -7,6 +7,7 @@ export class JobClientError extends Error {
     super(message);
     this.name = ERROR_TYPES.CLIENT;
     this.statusCode = statusCode;
+    this.message = message;
   }
 }
 
@@ -52,17 +53,23 @@ export function handleError(
     switch (statusCode) {
       case HTTP_STATUS.TOO_MANY_REQUESTS:
         return new RateLimitError(
-          `${context}: Rate limit exceeded`,
+          `[${statusCode}] ${context}: Rate limit exceeded`,
           error.response.headers["retry-after"],
           statusCode
         );
       case HTTP_STATUS.INTERNAL_SERVER_ERROR:
-        return new ServerError(`${context}: Internal server error`, statusCode);
+        return new ServerError(
+          `[${statusCode}] ${context}: Internal server error`,
+          statusCode
+        );
       case HTTP_STATUS.NOT_FOUND:
-        return new JobClientError(`${context}: Resource not found`, statusCode);
+        return new JobClientError(
+          `[${statusCode}] ${context}: Resource not found`,
+          statusCode
+        );
       default:
         return new JobClientError(
-          `${context} failed: ${error.response.data}`,
+          `[${statusCode}] ${context} failed: ${error.response.data}`,
           statusCode
         );
     }
