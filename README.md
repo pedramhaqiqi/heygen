@@ -240,3 +240,41 @@ Custom error classes provide clear and specific error handling:
 6. **Errors**: Exposed to allow for granular and predictable error handling, enabling clients to respond appropriately to various failure scenarios.
 
 By exposing only the essential methods and constants, this API ensures that users can interact with the client library effectively without unnecessary complexity. The flexibility provided by polling modes and configuration options allows users to adapt the client’s behavior to meet their specific requirements.
+
+## Future Considerations
+
+While the current implementation fulfills the requirements of status monitoring and job management, several enhancements can improve the robustness, scalability, and user experience of the project. These future considerations aim to address growing demands and optimize both the client and server components.
+
+1. **Opt-In Logging / Accepting a Logger Object**
+    - **Purpose**: Allow clients to provide their own logger implementation or opt-in to internal logging.
+    - **Benefits**:
+        - Improves observability for client users without enforcing a logging library.
+        - Users can integrate the client library seamlessly into their existing logging frameworks.
+
+2. **Dynamic Timeout Estimation**
+    - **Enhancement**: The job creation endpoint could return an estimated processing time for a job.
+    - **How It Works**:
+        - The server computes an approximate time for job completion based on input parameters or load.
+        - This estimate is sent back in the job creation response.
+    - **Benefits**:
+        - Clients can dynamically set their timeoutMs for awaitCompletion, ensuring polling durations are realistic.
+        - Avoids excessive waiting or premature timeouts.
+
+3. **Redis / Message Broker for Task Management**
+    - **Enhancement**: Integrate a Redis store or message broker (e.g., RabbitMQ, Kafka) to handle job state and task management more efficiently.
+    - **Purpose**:
+        - Manage tasks in a distributed, scalable, and fault-tolerant manner.
+        - Persist job states across multiple server instances.
+    - **Benefits**:
+        - Improves reliability and scalability when handling a large number of concurrent jobs.
+        - Decouples the job management logic from the API layer, enabling better separation of concerns.
+
+4. **Server Eviction Policy for Long-Polling**
+    - **Enhancement**: Implement an eviction policy to manage the active connection pool when handling long-polling at scale.
+    - **How It Works**:
+        - Set limits on the number of active long-polling connections.
+        - Evict older or idle connections based on configurable criteria (e.g., LRU - Least Recently Used).
+        - Return appropriate responses or retry suggestions to evicted clients.
+    - **Benefits**:
+        - Prevents server resource exhaustion when managing large numbers of concurrent long-polling requests.
+        - Ensures fair distribution of server resources and maintains performance under heavy load.
