@@ -1,4 +1,4 @@
-export const STATUS = {
+export const JOB_STATUS = {
   COMPLETED: "completed",
   PENDING: "pending",
   ERROR: "error",
@@ -22,7 +22,7 @@ export const POLLING_MODES = {
 
 export const END_POINTS = {
   JOBS: "/jobs",
-  STATUS: "/status",
+  JOB_STATUS: "/status",
 };
 
 export const ERROR_TYPES = {

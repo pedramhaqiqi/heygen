@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it, jest } from "@jest/globals";
 import { JobClient } from "../../src/JobClient";
-import { STATUS } from "../../src/constants";
+import { JOB_STATUS } from "../../src/constants";
 import { CreateJobResponse } from "../../src/types";
 
 const BASE_URL = "http://localhost:8000";
@@ -33,6 +33,6 @@ describe("JobClient - Long Polling", () => {
     });
 
     console.log(`Final status (long-polling): ${finalStatus}`);
-    expect(finalStatus).toBe(STATUS.COMPLETED);
+    expect(finalStatus).toBe(JOB_STATUS.COMPLETED);
   });
 });

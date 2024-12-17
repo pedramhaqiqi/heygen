@@ -1,19 +1,19 @@
-import { STATUS, POLLING_MODES } from "./constants";
+import { JOB_STATUS, POLLING_MODES } from "./constants";
 
-export type resultType = (typeof STATUS)[keyof typeof STATUS];
-export type pollMode = (typeof POLLING_MODES)[keyof typeof POLLING_MODES];
+export type JobStatus = (typeof JOB_STATUS)[keyof typeof JOB_STATUS];
+export type PollingMode = (typeof POLLING_MODES)[keyof typeof POLLING_MODES];
 
 export interface StatusResponse {
-  result: resultType;
+  result: JobStatus;
 }
 
 export interface CreateJobResponse {
   job_id: string;
-  status: resultType;
+  status: JobStatus;
 }
 
 export interface AwaitCompletionOptions {
-  mode?: pollMode;
+  mode?: PollingMode;
   timeoutMs?: number;
   pollIntervalMs?: number;
 }
