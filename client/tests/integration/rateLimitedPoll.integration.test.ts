@@ -1,21 +1,20 @@
-import { beforeAll, describe, expect, it, jest } from '@jest/globals';
+import { beforeAll, describe, expect, it, jest } from "@jest/globals";
 import { JobClient } from "../../src/JobClient";
 import { STATUS } from "../../src/constants";
 import { CreateJobResponse } from "../../src/types";
 
-const BASE_URL = "http://localhost:8000"; // Ensure your server is running here
+const BASE_URL = "http://localhost:8000";
 
-jest.setTimeout(75000); // Increase timeout for retries
+jest.setTimeout(75000);
 
 describe("JobClient - Rate Limiter and Retry Policy", () => {
   let client: JobClient;
 
   beforeAll(() => {
-    client = new JobClient(BASE_URL, 3); // 3 retries for demonstration
+    client = new JobClient(BASE_URL, 3);
   });
 
   it("should retry on rate-limiting (429) and complete the job successfully", async () => {
-    // Create a job that takes ~5 seconds and doesn't error
     const processingDuration = 5;
     const shouldError = false;
 
@@ -29,8 +28,8 @@ describe("JobClient - Rate Limiter and Retry Policy", () => {
     // Use short-polling with 0ms interval to quickly trigger retries as the server will rate limit.
     const finalStatus = await client.awaitCompletion(job_id, {
       mode: "short",
-      timeoutMs: 75000,    // 10 seconds timeout
-      pollIntervalMs: 0,   // 0ms interval to simulate rapid polling and hit rate limits
+      timeoutMs: 75000,
+      pollIntervalMs: 0,
     });
 
     console.log(`Final status (rate-limiter test): ${finalStatus}`);

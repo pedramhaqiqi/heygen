@@ -1,9 +1,8 @@
-import { beforeAll, describe, expect, it, afterEach } from "@jest/globals";
-import { JobClient } from "../../src";
+import { afterEach, beforeAll, describe, expect, it } from "@jest/globals";
 import nock from "nock";
-import { CreateJobResponse } from "../../src/types";
-import { ERROR_TYPES } from "../../src/constants";
+import { JobClient } from "../../src";
 import { JobClientError } from "../../src/errors";
+import { CreateJobResponse } from "../../src/types";
 
 const BASE_URL = "http://localhost:8000";
 const NUM_RETRIES = 3;
@@ -16,7 +15,7 @@ describe("JobClient - Server Error Handling", () => {
   });
 
   afterEach(() => {
-    nock.cleanAll(); // Clean up any pending mocks
+    nock.cleanAll(); 
   });
 
   it("should raise an error when the server returns 500 Internal Server Error", async () => {
@@ -27,7 +26,6 @@ describe("JobClient - Server Error Handling", () => {
       .reply(500, "Internal Server Error");
     nock(BASE_URL).post("/jobs").reply(200, { job_id: "1", status: "PENDING" });
 
-    // Step 2: Call createJob and verify that an error is thrown
     try {
       console.log("Creating a job with server error...");
       const processingDuration = 3;

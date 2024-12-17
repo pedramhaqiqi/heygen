@@ -3,9 +3,9 @@ import { JobClient } from "../../src/JobClient";
 import { STATUS } from "../../src/constants";
 import { CreateJobResponse } from "../../src/types";
 
-const BASE_URL = "http://localhost:8000"; // Ensure your server is running here
+const BASE_URL = "http://localhost:8000"; 
 
-jest.setTimeout(30000); // Increase timeout to 30 seconds
+jest.setTimeout(30000); 
 
 describe("JobClient - Short Polling", () => {
   let client: JobClient;

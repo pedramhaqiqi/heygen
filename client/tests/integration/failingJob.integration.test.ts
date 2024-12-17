@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it, jest } from '@jest/globals';
+import { beforeAll, describe, expect, it, jest } from "@jest/globals";
 import { JobClient } from "../../src/JobClient";
 import { STATUS } from "../../src/constants";
 import { CreateJobResponse } from "../../src/types";
@@ -17,9 +17,14 @@ describe("JobClient - Failing Job", () => {
   it("should create a job that fails and return ERROR status", async () => {
     const processingDuration = 5;
     const shouldError = true;
-    const { job_id, status }: CreateJobResponse = await client.createJob(processingDuration, shouldError);
+    const { job_id, status }: CreateJobResponse = await client.createJob(
+      processingDuration,
+      shouldError
+    );
 
-    console.log(`Created failing job with ID: ${job_id} and initial status: ${status}`);
+    console.log(
+      `Created failing job with ID: ${job_id} and initial status: ${status}`
+    );
 
     const finalStatus = await client.awaitCompletion(job_id, {
       mode: "short",
