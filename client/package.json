@@ -5,12 +5,11 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
-    "test:short-polling": "jest --runTestsByPath tests/integration/shortPolling.integration.test.ts --verbose",
     "test:long-polling": "jest --runTestsByPath tests/integration/longPolling.integration.test.ts --verbose",
+    "test:short-polling": "jest --runTestsByPath tests/integration/shortPolling.integration.test.ts --verbose",
     "test:failing-job": "jest --runTestsByPath tests/integration/failingJob.integration.test.ts --verbose",
     "test:rate-limiter": "jest --runTestsByPath tests/integration/rateLimitedPoll.integration.test.ts --verbose",
-    "test:server-error": "jest --runTestsByPath tests/integration/serverError.integration.test.ts --verbose",
-    "test:all": "jest -i --verbose"
+    "test:server-error": "jest --runTestsByPath tests/integration/serverError.integration.test.ts --verbose"
   },
   "keywords": [],
   "author": "",
