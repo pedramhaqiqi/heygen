@@ -137,7 +137,7 @@ class JobClient {
         return false;
 
       case STATUS.ERROR:
-        console.warn(`Job ${jobId} ended in an error state.`);
+        console.log(`Job ${jobId} ended in an error state.`);
         return false;
 
       case STATUS.PENDING:
