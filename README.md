@@ -80,6 +80,34 @@ Once you have installed the dependencies for the client and server,you are good 
     ./run-integration-tests.sh
     ```
 
+#### Test Cases
+The client library includes several integration tests to ensure its functionality, reliability, and resilience. Below is a concise description of each test case:
+
+- **test:long-polling**  
+    Verifies that the client can successfully monitor a job using long polling until completion or failure, respecting the specified timeouts and intervals.
+
+- **test:short-polling**  
+    Ensures that the client correctly implements short polling by repeatedly checking the server for job status updates at a defined interval.
+
+- **test:failing-job**  
+    Tests how the client handles a job that ends in an error state, ensuring proper error handling and response.
+
+- **test:rate-limiter**  
+    Simulates a scenario where the client makes frequent requests and hits the server’s rate limiting threshold. Confirms that the client reacts appropriately to rate-limited responses.
+
+- **test:server-error**  
+    Validates the client’s behavior when the server encounters an internal error (HTTP 500), ensuring retries or error propagation occur as expected.
+
+Each test case can be executed independently using the following commands:
+
+    ```sh
+    npm run test:long-polling
+    npm run test:short-polling
+    npm run test:failing-job
+    npm run test:rate-limiter
+    npm run test:server-error
+    ```
+
 ## Design Choices
 
 In developing my client library, I carefully evaluated multiple strategies for monitoring job statuses efficiently while ensuring scalability, adaptability, and minimal server overhead. Below are the key design decisions, including why I chose long polling over WebSockets, and the considerations I made to optimize performance.
