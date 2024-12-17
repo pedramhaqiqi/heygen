@@ -1,16 +1,17 @@
-import axios, { AxiosInstance } from "axios";
+import axios, { AxiosError, AxiosInstance } from "axios";
+import axiosRetry from "axios-retry";
 import {
-  STATUS,
   DEFAULT_MAX_RETRIES,
   DEFAULT_POLL_INTERVAL_MS,
   DEFAULT_TIMEOUT_MS,
+  STATUS,
 } from "./constants";
-import axiosRetry from "axios-retry";
+import { JobClientError, TimeoutError, handleError } from "./errors";
 import {
-  pollMode,
   AwaitCompletionOptions,
   CreateJobResponse,
   StatusResponse,
+  pollMode,
 } from "./types";
 class JobClient {
   private api: AxiosInstance;
@@ -29,8 +30,20 @@ class JobClient {
           axiosRetry.isNetworkError(error) || axiosRetry.isRetryableError(error)
         );
       },
-      onRetry: (retryCount, err) => {
-        console.log(`Retry attempt #${retryCount} due to error: ${err.message}`);
+      onRetry: (retryCount, error) => {
+        if (error.response?.status === 429) {
+          console.log(
+            `Retry attempt #${retryCount} due to 429 Rate Limit. Try in ${
+              error.response.headers["retry-after"] || "N/A"
+            }.`
+          );
+        } else {
+          console.log(
+            `Retry attempt #${retryCount} due to error: ${
+              error.message || "unknown error"
+            }`
+          );
+        }
       },
     });
   }
@@ -55,7 +68,7 @@ class JobClient {
       const data = response.data;
       return { job_id: data.job_id, status: data.status };
     } catch (error) {
-      throw new Error(`Failed to create job: ${error}`);
+      throw handleError(error as AxiosError, "Failed to create job");
     }
   }
 
@@ -74,16 +87,16 @@ class JobClient {
       const data = response.data;
       return data.result;
     } catch (error) {
-      throw new Error(`Failed to fetch status for job ${jobId}: ${error}`);
+      throw handleError(error as AxiosError, "Failed to fetch status");
     }
   }
-
   /**
    * Polls the server for the job status until it is no longer pending.
-   * @param {number} timeoutMs The maximum time to wait for the job to complete in milliseconds.
-   * @param {number} pollIntervalMs The time to wait between status requests in milliseconds.
+   * This is the main function that the client will call to track job completion.
+   * @param {string} jobId - The unique identifier of the job.
+   * @param {AwaitCompletionOptions} options - Configuration for timeout and polling interval.
    * @returns {Promise<string>} The final status of the job.
-   * @throws {Error} If the job ends in an error state or the timeout is reached.
+   * @throws {JobClientError} If the job ends in an error state, a timeout occurs, or there is a network/server issue.
    */
   public async awaitCompletion(
     jobId: string,
@@ -96,30 +109,25 @@ class JobClient {
     const start = Date.now();
 
     while (Date.now() - start <= timeoutMs) {
-      let status: string;
       try {
-        console.log("Fetching status...");
-        status = await this.getStatus(jobId, mode);
-      } catch (err: unknown) {
-        throw new Error(
-          `Failed to fetch status for job ${jobId}: ${String(err)}`
-        );
-      }
-
-      switch (status) {
-        case STATUS.COMPLETED:
-        case STATUS.ERROR:
+        console.log(`Polling job status for jobId: ${jobId}`);
+        const status = await this.getStatus(jobId, mode);
+        const shouldContinue = this.handleJobStatus(status, jobId);
+        if (!shouldContinue) {
           return status;
-        case STATUS.PENDING:
-          console.log(`Job still pending... Waiting ${pollIntervalMs}ms`);
-          await this.delay(pollIntervalMs);
-          break;
+        }
+        await this.delay(pollIntervalMs);
+      } catch (error) {
+        handleError(
+          error as AxiosError | Error,
+          `Failed while polling status for job ${jobId}`
+        );
       }
     }
 
-    throw new Error(
-      `Timeout reached after ${timeoutMs}ms waiting for completion.`
-    );
+    const message = `Polling timed out for job ${jobId} after ${timeoutMs}ms.`;
+    console.error(message);
+    throw new TimeoutError(timeoutMs);
   }
 
   /**
@@ -129,6 +137,34 @@ class JobClient {
    */
   private delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Handles the status of the job and determines whether to continue polling, return a result, or throw an error.
+   * @param {string} status - The current status of the job.
+   * @param {string} jobId - The unique identifier of the job.
+   * @returns {Promise<boolean>} A boolean indicating whether polling should continue.
+   * @throws {JobClientError} If the status is unknown or in an error state.
+   */
+  private handleJobStatus(status: string, jobId: string): boolean {
+    switch (status) {
+      case STATUS.COMPLETED:
+        console.log(`Job ${jobId} completed successfully.`);
+        return false;
+
+      case STATUS.ERROR:
+        console.warn(`Job ${jobId} ended in an error state.`);
+        return false;
+
+      case STATUS.PENDING:
+        console.log(`Job ${jobId} is still pending. Will retry.`);
+        return true;
+
+      default:
+        throw new JobClientError(
+          `Unknown status '${status}' for job ${jobId}.`
+        );
+    }
   }
 }
 

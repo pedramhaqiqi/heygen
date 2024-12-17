@@ -8,7 +8,7 @@ async function runTest() {
   try {
     console.log("Creating a new job...");
     // Create a job that takes 10 seconds and does not error
-    const { job_id, status } = await client.createJob(100, false);
+    const { job_id, status } = await client.createJob(10, false);
     console.log(`Job created with ID: ${job_id}, initial status: ${status}`);
 
     console.log("Waiting for job completion...");
