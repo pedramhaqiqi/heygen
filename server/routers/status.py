@@ -12,7 +12,7 @@ router = APIRouter()
 
 
 @router.get("/status")
-@limiter.limit(limit_value="10/minute")
+@limiter.limit(limit_value="25/minute")
 async def get_status(
     request: Request,
     job_id: str = Query(...),
