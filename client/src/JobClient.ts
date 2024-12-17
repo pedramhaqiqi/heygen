@@ -1,13 +1,11 @@
 import axios, { AxiosError, AxiosInstance } from "axios";
-import axiosRetry from "axios-retry";
 import {
   DEFAULT_MAX_RETRIES,
   DEFAULT_POLL_INTERVAL_MS,
   DEFAULT_TIMEOUT_MS,
   END_POINTS,
-  HTTP_STATUS,
   POLLING_MODES,
-  STATUS,
+  STATUS
 } from "./constants";
 import { JobClientError, TimeoutError, handleError } from "./errors";
 import {
@@ -17,6 +15,7 @@ import {
   pollMode,
   resultType,
 } from "./types";
+import { configureAxiosRetry } from "./utils";
 class JobClient {
   private api: AxiosInstance;
 
@@ -26,30 +25,7 @@ class JobClient {
       baseURL: url.toString(),
     });
 
-    axiosRetry(this.api, {
-      retries: maxRetries,
-      retryDelay: axiosRetry.exponentialDelay,
-      retryCondition: (error) => {
-        return (
-          axiosRetry.isNetworkError(error) || axiosRetry.isRetryableError(error)
-        );
-      },
-      onRetry: (retryCount, error) => {
-        if (error.response?.status === HTTP_STATUS.TOO_MANY_REQUESTS) {
-          console.log(
-            `Retry attempt #${retryCount} due to 429 Rate Limit. Try in ${
-              error.response.headers["retry-after"] || "N/A"
-            }.`
-          );
-        } else {
-          console.log(
-            `Retry attempt #${retryCount} due to error: ${
-              error.message || "unknown error"
-            }`
-          );
-        }
-      },
-    });
+    configureAxiosRetry(this.api, maxRetries);
   }
 
   /**
@@ -121,6 +97,9 @@ class JobClient {
         if (!shouldContinue) {
           return status;
         }
+        console.log(
+          `Job ${jobId} is still pending. Will retry in ${pollIntervalMs}ms.`
+        );
         await this.delay(pollIntervalMs);
       } catch (error) {
         handleError(
@@ -162,7 +141,6 @@ class JobClient {
         return false;
 
       case STATUS.PENDING:
-        console.log(`Job ${jobId} is still pending. Will retry.`);
         return true;
 
       default:
