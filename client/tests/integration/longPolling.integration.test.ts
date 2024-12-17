@@ -15,7 +15,7 @@ describe("JobClient - Long Polling", () => {
   });
 
   it("should create a job (long-polling) and complete successfully", async () => {
-    const processingDuration = 3;
+    const processingDuration = 15;
     const shouldError = false;
     const { job_id, status }: CreateJobResponse = await client.createJob(
       processingDuration,
