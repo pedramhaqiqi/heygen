@@ -1,3 +1,85 @@
+## Project Setup Guide
+
+Follow the steps below to set up and run the project. These instructions cover both the server and client components.
+
+### Setting Up the Server
+
+To set up and run the FastAPI server:
+
+1. **Navigate to the Server Directory**  
+    From the root of the project, change into the server directory:
+    ```sh
+    cd server
+    ```
+
+2. **Create a Virtual Environment**  
+    Create a Python virtual environment:
+    ```sh
+    python -m venv .venv
+    ```
+
+3. **Activate the Virtual Environment**  
+    Run the following command:
+    ```sh
+    source .venv/bin/activate
+    ```
+
+4. **Install Dependencies**  
+    Install the required Python packages:
+    ```sh
+    pip install -r requirements.txt
+    ```
+
+5. **Run the Server**  
+    Start the FastAPI development server (for our purposes running in dev mode suffices):
+    ```sh
+    fastapi dev 
+    ```
+    By default, the server will be available at:
+    ```
+    http://127.0.0.1:8000
+    ```
+
+### Setting Up the Client
+
+To set up the client library:
+
+1. **Navigate to the Client Directory**  
+    In a new terminal window, change to the client directory:
+    ```sh
+    cd client
+    ```
+
+2. **Install Dependencies**  
+    Install the required Node.js packages using npm:
+    ```sh
+    npm install
+    ```
+
+### Running the Project
+
+With both the server and client set up:
+
+1. **Start the Server**  
+    Ensure the FastAPI server is running on `http://127.0.0.1:8000`.
+
+2. **Test the Client Integration Tests**  
+    You can run one of the client integration tests to verify everything is working. 
+    ```sh
+    npm run test:long-polling
+    ```
+
+Once both the server and client are set up, you can test the functionality or use the client library to create jobs, fetch statuses, and monitor job completions. I've provided a `test-client.ts` file for you to play around with the client library, also there are integration tests that showcase various functionalities and situations. 
+
+### Integration Tests:
+Once you have installed the dependencies for the client and server,you are good to run the integrations scripts. You are perfectly fine if you would like to run them individually, I have provided a script at the root of the project that spins up the server and runs all the tests in order.
+
+    In the root of the repository, while making sure the server is down. The script run the 
+    server as a daemon and proceed to navigate to the client library and run the integration tests.
+    ```sh
+    ./run-integration-tests.sh
+    ```
+
 ## Design Choices
 
 In developing my client library, I carefully evaluated multiple strategies for monitoring job statuses efficiently while ensuring scalability, adaptability, and minimal server overhead. Below are the key design decisions, including why I chose long polling over WebSockets, and the considerations I made to optimize performance.
