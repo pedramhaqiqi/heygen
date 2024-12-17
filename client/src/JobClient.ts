@@ -4,6 +4,9 @@ import {
   DEFAULT_MAX_RETRIES,
   DEFAULT_POLL_INTERVAL_MS,
   DEFAULT_TIMEOUT_MS,
+  END_POINTS,
+  HTTP_STATUS,
+  POLLING_MODES,
   STATUS,
 } from "./constants";
 import { JobClientError, TimeoutError, handleError } from "./errors";
@@ -12,6 +15,7 @@ import {
   CreateJobResponse,
   StatusResponse,
   pollMode,
+  resultType,
 } from "./types";
 class JobClient {
   private api: AxiosInstance;
@@ -31,7 +35,7 @@ class JobClient {
         );
       },
       onRetry: (retryCount, error) => {
-        if (error.response?.status === 429) {
+        if (error.response?.status === HTTP_STATUS.TOO_MANY_REQUESTS) {
           console.log(
             `Retry attempt #${retryCount} due to 429 Rate Limit. Try in ${
               error.response.headers["retry-after"] || "N/A"
@@ -52,7 +56,7 @@ class JobClient {
    * Creates a new job on the server with the specified parameters, main use is for testing.
    * @param {number} processingDuration - The time in seconds the job should take before completing or erroring.
    * @param {boolean} shouldError - Whether the job should end in an error state (true) or complete successfully (false).
-   * @returns {Promise<{ job_id: string; status: string }>} An object containing the newly created job_id and its initial status.
+   * @returns {Promise<CreateJobResponse>} An object containing the newly created job_id and its initial status.
    * @throws {Error} If the HTTP request fails or the server returns an error response.
    */
   public async createJob(
@@ -60,7 +64,7 @@ class JobClient {
     shouldError: boolean
   ): Promise<CreateJobResponse> {
     try {
-      const response = await this.api.post<CreateJobResponse>("/jobs", {
+      const response = await this.api.post<CreateJobResponse>(END_POINTS.JOBS, {
         processing_duration: processingDuration,
         should_error: shouldError,
       });
@@ -75,12 +79,13 @@ class JobClient {
   /**
    * Fetches the current status of the job from the server.
    * @param {string} jobId - The unique identifier of the job to check.
-   * @returns {Promise<string>} The current status of the job as a string.
+   * @param {pollMode} mode - The polling mode to use when checking the job status.
+   * @returns {Promise<resultType>} The current status of the job as a string.
    * @throws {Error} If the HTTP request fails or the server responds with an error status.
    */
-  public async getStatus(jobId: string, mode: pollMode): Promise<string> {
+  public async getStatus(jobId: string, mode: pollMode): Promise<resultType> {
     try {
-      const response = await this.api.get<StatusResponse>(`/status`, {
+      const response = await this.api.get<StatusResponse>(END_POINTS.STATUS, {
         params: { job_id: jobId, mode },
       });
 
@@ -94,18 +99,18 @@ class JobClient {
    * Polls the server for the job status until it is no longer pending.
    * This is the main function that the client will call to track job completion.
    * @param {string} jobId - The unique identifier of the job.
-   * @param {AwaitCompletionOptions} options - Configuration for timeout and polling interval.
-   * @returns {Promise<string>} The final status of the job.
-   * @throws {JobClientError} If the job ends in an error state, a timeout occurs, or there is a network/server issue.
+   * @param {AwaitCompletionOptions} options - Configuration for timeout and polling interval, and polling strategy.
+   * @returns {Promise<resultType>} The final status of the job.
+   * @throws {Error} If the job ends in an error state, a timeout occurs, or there is a network/server issue.
    */
   public async awaitCompletion(
     jobId: string,
     {
-      mode = "long",
+      mode = POLLING_MODES.LONG,
       timeoutMs = DEFAULT_TIMEOUT_MS,
       pollIntervalMs = DEFAULT_POLL_INTERVAL_MS,
     }: AwaitCompletionOptions
-  ): Promise<string> {
+  ): Promise<resultType> {
     const start = Date.now();
 
     while (Date.now() - start <= timeoutMs) {

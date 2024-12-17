@@ -1,7 +1,7 @@
-import { STATUS } from "./constants";
+import { STATUS, POLLING_MODES } from "./constants";
 
 export type resultType = (typeof STATUS)[keyof typeof STATUS];
-export type pollMode = "short" | "long";
+export type pollMode = (typeof POLLING_MODES)[keyof typeof POLLING_MODES];
 
 export interface StatusResponse {
   result: resultType;

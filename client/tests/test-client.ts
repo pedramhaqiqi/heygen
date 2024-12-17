@@ -15,7 +15,7 @@ async function runTest() {
     const finalStatus = await client.awaitCompletion(job_id, {
       timeoutMs: 20000,
       pollIntervalMs: 0,
-      mode: "short",
+      mode: "long",
     });
     console.log(`Final job status for job ${job_id}: ${finalStatus}`);
   } catch (error) {
