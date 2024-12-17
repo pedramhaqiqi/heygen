@@ -164,7 +164,7 @@ The client library is built with flexibility, allowing users to fine-tune pollin
 - **Polling Mode**:
     - **Long Polling**: Efficient for reducing request frequency while maintaining up-to-date job statuses.
     - **Short Polling**: Useful for clients needing more frequent updates in low-latency scenarios.
-- **Retry Policy**: To improve resiliency, the library includes a retry mechanism for transient failures (e.g., network issues or intermittent errors), ensuring reliable job monitoring even in less stable environments.
+- **Retry Policy**: To improve resiliency, the library includes a retry mechanism for transient failures (e.g., network issues or intermittent errors), ensuring reliable job monitoring even in less stable environments. The server returns a `Retry-After` header, which the client can handle using an exponential backoff strategy.
 
 #### Server-Side Considerations
 
